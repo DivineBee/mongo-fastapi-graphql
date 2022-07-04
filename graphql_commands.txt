@@ -1,0 +1,18 @@
+mutation CreateCar{
+  createCar(year: 1999, model: "BMW", color: "orange"){
+    car {
+      year
+      model
+      color
+    }
+  }
+}
+
+
+
+query {
+  cars {
+    year
+    model
+  }
+}
