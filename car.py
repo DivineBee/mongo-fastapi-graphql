@@ -1,9 +1,5 @@
-import asyncio
-
 import graphene
 from graphene_mongo import MongoengineObjectType
-from graphql import GraphQLError
-
 import services
 from models import Car as CarModel
 
@@ -60,36 +56,3 @@ class DeleteCar(graphene.Mutation):
 class Mutation(graphene.ObjectType):
     create_car = CreateCar.Field()
     delete_car = DeleteCar.Field()
-
-# class CreateCar(graphene.Mutation):
-#     class Arguments:
-#         year = graphene.Int(required=True)
-#         model = graphene.String(required=True)
-#         color = graphene.String(required=True)
-#         # car_input = CarGrapheneInputModel()
-#
-#     car = graphene.Field(lambda: CarGrapheneModel)
-#
-#     # @staticmethod
-#     # def mutate(parent, info, car_input):
-#     #     car = CarModel(**car_input)
-#
-#     @staticmethod
-#     def mutate(parent, info, year, model, color):
-#         car = CarModel(year=year, model=model, color=color)
-#         car.save()
-#         return CreateCar(car=car)
-#
-#
-# class CarMutation(graphene.ObjectType):
-#     create_car = CreateCar.Field()
-#
-#
-# class CarSubscription(graphene.ObjectType):
-#     count = graphene.Int(upto=graphene.Int())
-#
-#     @staticmethod
-#     async def subscribe_count(root, info, upto=3):
-#         for i in range(upto):
-#             yield i
-#             await asyncio.sleep(1)

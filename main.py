@@ -1,16 +1,18 @@
 import os
-
 import graphene
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Response, status, Request, Security
+from fastapi.security import HTTPBearer
 from mongoengine import connect
 from sentry_sdk import capture_message
 import sentry_sdk
 from dotenv import load_dotenv
 from starlette.graphql import GraphQLApp
 import requests
-# from car import CarQuery, CarMutation, CarSubscription
 from car import Query, Mutation
 from fastapi.middleware.cors import CORSMiddleware
+from utils import VerifyToken
+from fastapi_auth0 import Auth0, Auth0User
+
 
 load_dotenv()
 mongo_password = os.environ.get("MONGO_PASSWORD")
@@ -20,6 +22,8 @@ sentry_sdk.init(
     traces_sample_rate=1.0
 )
 
+token_auth_scheme = HTTPBearer()
+auth = Auth0(domain=os.environ.get("DOMAIN"), api_audience=os.environ.get("API_AUDIENCE"))
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
@@ -32,7 +36,6 @@ app.add_middleware(
 app.add_route(
     "/graphql", GraphQLApp(schema=graphene.Schema(query=Query, mutation=Mutation))
 )
-# app.mount("/graphiql", GraphQLApp(graphene.Schema(query=Query, mutation=Mutation)))
 
 
 @app.on_event("startup")
@@ -63,7 +66,17 @@ async def raise_some():
 
 
 @app.get("/send-notification/{email}")
-async def send_notification(email: str, background_tasks: BackgroundTasks):
+async def send_notification(email: str, background_tasks: BackgroundTasks, response: Response,
+                            token: str = Depends(token_auth_scheme)):
+    result = VerifyToken(token.credentials).verify()
+    if result.get("status"):
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return result
     background_tasks.add_task(send_email_message, email, message="some notification",
                               subject="hi there")
     return {"message": "Notification sent in the background"}
+
+
+@app.get("/secure", dependencies=[Depends(auth.implicit_scheme)])
+def get_secure(user: Auth0User = Security(auth.get_user, scopes=['read:blabla'])):
+    return {"message": f"{user}"}
